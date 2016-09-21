@@ -169,7 +169,12 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
                     ensureAllDefaultOptions($scope);
 
                     $scope.selectedNodes = $scope.selectedNodes || [];
-                    $scope.expandedNodes = $scope.expandedNodes || [];
+
+                    if (!angular.isDefined($scope.expandLevel)) {
+                        $scope.expandLevel = 2;
+                    }
+                    $scope.explicitExpandedNodes = angular.isDefined($scope.expandedNodes);
+                    $scope.expandedNodes = $scope.expandedNodes || $scope.defaultExpandedNodes();
                     $scope.expandedNodesMap = {};
                     for (var i = 0; i < $scope.expandedNodes.length; i++) {
                         $scope.expandedNodesMap["a" + i] = $scope.expandedNodes[i];
