@@ -6,24 +6,6 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
     'use strict';
 
 
-    function ensureAllDefaultOptions($scope) {
-        ensureDefault($scope.options, "multiSelection", false);
-        ensureDefault($scope.options, "nodeChildren", "children");
-        ensureDefault($scope.options, "dirSelectable", "true");
-        ensureDefault($scope.options, "injectClasses", {});
-        ensureDefault($scope.options.injectClasses, "ul", "");
-        ensureDefault($scope.options.injectClasses, "li", "");
-        ensureDefault($scope.options.injectClasses, "liSelected", "tree-selected");
-        ensureDefault($scope.options.injectClasses, "iExpanded", "");
-        ensureDefault($scope.options.injectClasses, "iCollapsed", "");
-        ensureDefault($scope.options.injectClasses, "iLeaf", "");
-        ensureDefault($scope.options.injectClasses, "label", "");
-        ensureDefault($scope.options.injectClasses, "labelSelected", "");
-        ensureDefault($scope.options, "equality", defaultEquality);
-        ensureDefault($scope.options, "isLeaf", defaultIsLeaf);
-        ensureDefault($scope.options, "allowDeselect", true);
-        ensureDefault($scope.options, "isSelectable", defaultIsSelectable);
-    }
 
     angular.module('treeControl', [])
         .constant('treeConfig', {
@@ -156,6 +138,26 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
                             obj[prop] = value;
                     }
 
+
+
+                    function ensureAllDefaultOptions($scope) {
+                        ensureDefault($scope.options, "multiSelection", false);
+                        ensureDefault($scope.options, "nodeChildren", "children");
+                        ensureDefault($scope.options, "dirSelectable", "true");
+                        ensureDefault($scope.options, "injectClasses", {});
+                        ensureDefault($scope.options.injectClasses, "ul", "");
+                        ensureDefault($scope.options.injectClasses, "li", "");
+                        ensureDefault($scope.options.injectClasses, "liSelected", "tree-selected");
+                        ensureDefault($scope.options.injectClasses, "iExpanded", "");
+                        ensureDefault($scope.options.injectClasses, "iCollapsed", "");
+                        ensureDefault($scope.options.injectClasses, "iLeaf", "");
+                        ensureDefault($scope.options.injectClasses, "label", "");
+                        ensureDefault($scope.options.injectClasses, "labelSelected", "");
+                        ensureDefault($scope.options, "equality", defaultEquality);
+                        ensureDefault($scope.options, "isLeaf", defaultIsLeaf);
+                        ensureDefault($scope.options, "allowDeselect", true);
+                        ensureDefault($scope.options, "isSelectable", defaultIsSelectable);
+                    }
 
                     function shallowCopy(src, dst) {
                         if (angular.isArray(src)) {
