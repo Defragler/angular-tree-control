@@ -1,8 +1,8 @@
 /* commonjs package manager support (eg componentjs) */
-if (typeof module !== "undefined" && typeof exports !== "undefined" && module.exports === exports){
-  module.exports = 'treeControl';
+if (typeof module !== "undefined" && typeof exports !== "undefined" && module.exports === exports) {
+    module.exports = 'treeControl';
 }
-(function ( angular ) {
+(function (angular) {
     'use strict';
 
     function createPath(startScope) {
@@ -18,6 +18,10 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
             }
             return _path;
         }
+    }
+
+    function isDraggable() {
+        return !!$scope.onNodeDrag;
     }
 
     function ensureDefault(obj, prop, value) {
@@ -74,7 +78,7 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
         ensureDefault($scope.options, "injectClasses", {});
         ensureDefault($scope.options.injectClasses, "ul", "");
         ensureDefault($scope.options.injectClasses, "li", "");
-        ensureDefault($scope.options.injectClasses, "liSelected", "");
+        ensureDefault($scope.options.injectClasses, "liSelected", "tree-selected");
         ensureDefault($scope.options.injectClasses, "iExpanded", "");
         ensureDefault($scope.options.injectClasses, "iCollapsed", "");
         ensureDefault($scope.options.injectClasses, "iLeaf", "");
@@ -85,12 +89,12 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
         ensureDefault($scope.options, "allowDeselect", true);
         ensureDefault($scope.options, "isSelectable", defaultIsSelectable);
     }
-    
-    angular.module( 'treeControl', [] )
+
+    angular.module('treeControl', [])
         .constant('treeConfig', {
             templateUrl: null
         })
-        .directive( 'treecontrol', ['$compile', function( $compile ) {
+        .directive('treecontrol', ['$compile', function ($compile) {
             /**
              * @param cssClass - the css class
              * @param addClassProperty - should we wrap the class name with class=""
@@ -104,8 +108,8 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
                 }
                 else
                     return "";
-            }       
-            
+            }
+
             return {
                 restrict: 'EA',
                 require: "treecontrol",
@@ -126,26 +130,31 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
                     filterComparator: "=?"
                 },
                 controller: ['$scope', '$templateCache', '$interpolate', 'treeConfig', function ($scope, $templateCache, $interpolate, treeConfig) {
-                    
+
                     $scope.options = $scope.options || {};
-                    
+
                     ensureAllDefaultOptions($scope);
-                  
+
+                    if (!angular.isDefined($scope.expandLevel)) {
+                        $scope.expandLevel = 2;
+                    }
+
+                    $scope.explicitExpandedNodes = angular.isDefined($scope.expandedNodes);
                     $scope.selectedNodes = $scope.selectedNodes || [];
-                    $scope.expandedNodes = $scope.expandedNodes || [];
+                    $scope.expandedNodes = $scope.expandedNodes || $scope.defaultExpandedNodes();;
                     $scope.expandedNodesMap = {};
-                    for (var i=0; i < $scope.expandedNodes.length; i++) {
-                        $scope.expandedNodesMap["a"+i] = $scope.expandedNodes[i];
+                    for (var i = 0; i < $scope.expandedNodes.length; i++) {
+                        $scope.expandedNodesMap["a" + i] = $scope.expandedNodes[i];
                     }
                     $scope.parentScopeOfTree = $scope.$parent;
 
 
                     function isSelectedNode(node) {
-                        if (!$scope.options.multiSelection && ($scope.options.equality(node, $scope.selectedNode , $scope)))
+                        if (!$scope.options.multiSelection && ($scope.options.equality(node, $scope.selectedNode, $scope)))
                             return true;
                         else if ($scope.options.multiSelection && $scope.selectedNodes) {
-                            for (var i = 0; (i < $scope.selectedNodes.length); i++) {
-                                if ($scope.options.equality(node, $scope.selectedNodes[i] , $scope)) {
+                            for (var i = 0; (i < $scope.selectedNodes.length) ; i++) {
+                                if ($scope.options.equality(node, $scope.selectedNodes[i], $scope)) {
                                     return true;
                                 }
                             }
@@ -153,15 +162,11 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
                         }
                     }
 
-                    function isDraggable() {
-                        return !!$scope.onNodeDrag;
-                    }
-
                     $scope.dragNode = function (node) {
                         return $scope.onNodeDrag({ node: node });
                     };
 
-                    $scope.headClass = function(node) {
+                    $scope.headClass = function (node) {
                         var liSelectionClass = classIfDefined($scope.options.injectClasses.liSelected, false);
                         var injectSelectionClass = "";
                         if (liSelectionClass && isSelectedNode(node))
@@ -174,18 +179,51 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
                             return "tree-collapsed" + injectSelectionClass;
                     };
 
-                    $scope.iBranchClass = function() {
+                    $scope.iBranchClass = function () {
                         if ($scope.expandedNodesMap[this.$id])
                             return classIfDefined($scope.options.injectClasses.iExpanded);
                         else
                             return classIfDefined($scope.options.injectClasses.iCollapsed);
                     };
 
-                    $scope.nodeExpanded = function() {
+                    $scope.defaultExpandedNodes = function (nodes, depth) {
+                        var expandedNodes = [];
+                        var nodeChildren = $scope.options.nodeChildren;
+
+                        depth = depth || 1;
+                        nodes = nodes || $scope.treeModel;
+
+                        if (nodes == null) {
+                            return expandedNodes;
+                        }
+
+                        if (!nodes.length && !defaultIsLeaf(nodes)) {
+                            nodes = nodes[nodeChildren];
+                        }
+
+                        if (depth > $scope.expandLevel || !nodes.length) {
+                            return expandedNodes;
+                        }
+
+                        depth++;
+
+                        for (var i = 0, len = nodes.length; i < len; i++) {
+                            if (!defaultIsLeaf(nodes[i])) {
+                                expandedNodes.push(nodes[i]);
+                                expandedNodes = expandedNodes.concat(
+                                    $scope.defaultExpandedNodes(nodes[i][nodeChildren], depth)
+                                );
+                            }
+                        }
+
+                        return expandedNodes;
+                    };
+
+                    $scope.nodeExpanded = function () {
                         return !!$scope.expandedNodesMap[this.$id];
                     };
 
-                    $scope.selectNodeHead = function() {
+                    $scope.selectNodeHead = function () {
                         var transcludedScope = this;
                         var expanding = $scope.expandedNodesMap[transcludedScope.$id] === undefined;
                         $scope.expandedNodesMap[transcludedScope.$id] = (expanding ? transcludedScope.node : undefined);
@@ -194,8 +232,8 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
                         }
                         else {
                             var index;
-                            for (var i=0; (i < $scope.expandedNodes.length) && !index; i++) {
-                                if ($scope.options.equality($scope.expandedNodes[i], transcludedScope.node , $scope)) {
+                            for (var i = 0; (i < $scope.expandedNodes.length) && !index; i++) {
+                                if ($scope.options.equality($scope.expandedNodes[i], transcludedScope.node, $scope)) {
                                     index = i;
                                 }
                             }
@@ -203,22 +241,24 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
                                 $scope.expandedNodes.splice(index, 1);
                         }
                         if ($scope.onNodeToggle) {
-                            var parentNode = (transcludedScope.$parent.node === transcludedScope.synteticRoot)?null:transcludedScope.$parent.node;
+                            var parentNode = (transcludedScope.$parent.node === transcludedScope.synteticRoot) ? null : transcludedScope.$parent.node;
                             var path = createPath(transcludedScope);
-                            $scope.onNodeToggle({node: transcludedScope.node, $parentNode: parentNode, $path: path,
-                              $index: transcludedScope.$index, $first: transcludedScope.$first, $middle: transcludedScope.$middle,
-                              $last: transcludedScope.$last, $odd: transcludedScope.$odd, $even: transcludedScope.$even, expanded: expanding});
+                            $scope.onNodeToggle({
+                                node: transcludedScope.node, $parentNode: parentNode, $path: path,
+                                $index: transcludedScope.$index, $first: transcludedScope.$first, $middle: transcludedScope.$middle,
+                                $last: transcludedScope.$last, $odd: transcludedScope.$odd, $even: transcludedScope.$even, expanded: expanding
+                            });
 
                         }
                     };
 
-                    $scope.selectNodeLabel = function( selectedNode){
+                    $scope.selectNodeLabel = function (selectedNode) {
                         var transcludedScope = this;
-                        if(!$scope.options.isLeaf(selectedNode, $scope) && (!$scope.options.dirSelectable || !$scope.options.isSelectable(selectedNode))) {
+                        if (!$scope.options.isLeaf(selectedNode, $scope) && (!$scope.options.dirSelectable || !$scope.options.isSelectable(selectedNode))) {
                             // Branch node is not selectable, expand
                             this.selectNodeHead();
                         }
-                        else if($scope.options.isLeaf(selectedNode, $scope) && (!$scope.options.isSelectable(selectedNode))) {
+                        else if ($scope.options.isLeaf(selectedNode, $scope) && (!$scope.options.isSelectable(selectedNode))) {
                             // Leaf node is not selectable
                             return;
                         }
@@ -226,8 +266,8 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
                             var selected = false;
                             if ($scope.options.multiSelection) {
                                 var pos = -1;
-                                for (var i=0; i < $scope.selectedNodes.length; i++) {
-                                    if($scope.options.equality(selectedNode, $scope.selectedNodes[i] , $scope)) {
+                                for (var i = 0; i < $scope.selectedNodes.length; i++) {
+                                    if ($scope.options.equality(selectedNode, $scope.selectedNodes[i], $scope)) {
                                         pos = i;
                                         break;
                                     }
@@ -239,7 +279,7 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
                                     $scope.selectedNodes.splice(pos, 1);
                                 }
                             } else {
-                                if (!$scope.options.equality(selectedNode, $scope.selectedNode , $scope)) {
+                                if (!$scope.options.equality(selectedNode, $scope.selectedNode, $scope)) {
                                     $scope.selectedNode = selectedNode;
                                     selected = true;
                                 }
@@ -253,16 +293,18 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
                                 }
                             }
                             if ($scope.onSelection) {
-                                var parentNode = (transcludedScope.$parent.node === transcludedScope.synteticRoot)?null:transcludedScope.$parent.node;
+                                var parentNode = (transcludedScope.$parent.node === transcludedScope.synteticRoot) ? null : transcludedScope.$parent.node;
                                 var path = createPath(transcludedScope)
-                                $scope.onSelection({node: selectedNode, selected: selected, $parentNode: parentNode, $path: path,
-                                  $index: transcludedScope.$index, $first: transcludedScope.$first, $middle: transcludedScope.$middle,
-                                  $last: transcludedScope.$last, $odd: transcludedScope.$odd, $even: transcludedScope.$even});
+                                $scope.onSelection({
+                                    node: selectedNode, selected: selected, $parentNode: parentNode, $path: path,
+                                    $index: transcludedScope.$index, $first: transcludedScope.$first, $middle: transcludedScope.$middle,
+                                    $last: transcludedScope.$last, $odd: transcludedScope.$odd, $even: transcludedScope.$even
+                                });
                             }
                         }
                     };
 
-                    $scope.selectedClass = function() {
+                    $scope.selectedClass = function () {
                         var isThisNodeSelected = isSelectedNode(this.node);
                         var labelSelectionClass = classIfDefined($scope.options.injectClasses.labelSelected, false);
                         var injectSelectionClass = "";
@@ -272,26 +314,26 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
                         return isThisNodeSelected ? "tree-selected" + injectSelectionClass : "";
                     };
 
-                    $scope.unselectableClass = function() {
+                    $scope.unselectableClass = function () {
                         var isThisNodeUnselectable = !$scope.options.isSelectable(this.node);
                         var labelUnselectableClass = classIfDefined($scope.options.injectClasses.labelUnselectable, false);
                         return isThisNodeUnselectable ? "tree-unselectable " + labelUnselectableClass : "";
                     };
 
                     //tree template
-                    $scope.isReverse = function() {
-                      return !($scope.reverseOrder === 'false' || $scope.reverseOrder === 'False' || $scope.reverseOrder === '' || $scope.reverseOrder === false);
+                    $scope.isReverse = function () {
+                        return !($scope.reverseOrder === 'false' || $scope.reverseOrder === 'False' || $scope.reverseOrder === '' || $scope.reverseOrder === false);
                     };
 
-                    $scope.orderByFunc = function() {
-                      return $scope.orderBy;
+                    $scope.orderByFunc = function () {
+                        return $scope.orderBy;
                     };
-//                    return "" + $scope.orderBy;
+                    //                    return "" + $scope.orderBy;
 
                     var templateOptions = {
                         orderBy: $scope.orderBy ? " | orderBy:orderByFunc():isReverse()" : '',
                         ulClass: classIfDefined($scope.options.injectClasses.ul, true),
-                        nodeChildren:  $scope.options.nodeChildren,
+                        nodeChildren: $scope.options.nodeChildren,
                         liClass: classIfDefined($scope.options.injectClasses.li, true),
                         iLeafClass: classIfDefined($scope.options.injectClasses.iLeaf, false),
                         labelClass: classIfDefined($scope.options.injectClasses.label, false)
@@ -300,11 +342,11 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
                     var template;
                     var templateUrl = $scope.options.templateUrl || treeConfig.templateUrl;
 
-                    if(templateUrl) {
+                    if (templateUrl) {
                         template = $templateCache.get(templateUrl);
                     }
 
-                    if(!template) {
+                    if (!template) {
                         template =
                             '<ul {{options.ulClass}} >' +
                             '<li ng-repeat="node in node.{{options.nodeChildren}} | filter:filterExpression:filterComparator {{options.orderBy}}" ng-class="headClass(node)" {{options.liClass}}' +
@@ -317,10 +359,10 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
                             '</ul>';
                     }
 
-                    this.template = $compile($interpolate(template)({options: templateOptions}));
+                    this.template = $compile($interpolate(template)({ options: templateOptions }));
                 }],
-                compile: function(element, attrs, childTranscludeFn) {
-                    return function ( scope, element, attrs, treemodelCntr ) {
+                compile: function (element, attrs, childTranscludeFn) {
+                    return function (scope, element, attrs, treemodelCntr) {
 
                         scope.$watch("treeModel", function updateNodeOnRootScope(newValue) {
                             if (angular.isArray(newValue)) {
@@ -335,15 +377,19 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
                                     return;
                                 scope.node = newValue;
                             }
+
+                            if (!scope.explicitExpandedNodes) {
+                                scope.expandedNodes = scope.defaultExpandedNodes(scope.node);
+                            }
                         });
 
-                        scope.$watchCollection('expandedNodes', function(newValue, oldValue) {
+                        scope.$watchCollection('expandedNodes', function (newValue, oldValue) {
                             var notFoundIds = 0;
                             var newExpandedNodesMap = {};
                             var $liElements = element.find('li');
                             var existingScopes = [];
                             // find all nodes visible on the tree and the scope $id of the scopes including them
-                            angular.forEach($liElements, function(liElement) {
+                            angular.forEach($liElements, function (liElement) {
                                 var $liElement = angular.element(liElement);
                                 var liScope = {
                                     $id: $liElement.data('scope-id'),
@@ -354,11 +400,11 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
                             // iterate over the newValue, the new expanded nodes, and for each find it in the existingNodesAndScopes
                             // if found, add the mapping $id -> node into newExpandedNodesMap
                             // if not found, add the mapping num -> node into newExpandedNodesMap
-                            angular.forEach(newValue, function(newExNode) {
+                            angular.forEach(newValue, function (newExNode) {
                                 var found = false;
-                                for (var i=0; (i < existingScopes.length) && !found; i++) {
+                                for (var i = 0; (i < existingScopes.length) && !found; i++) {
                                     var existingScope = existingScopes[i];
-                                    if (scope.options.equality(newExNode, existingScope.node , scope)) {
+                                    if (scope.options.equality(newExNode, existingScope.node, scope)) {
                                         newExpandedNodesMap[existingScope.$id] = existingScope.node;
                                         found = true;
                                     }
@@ -369,13 +415,13 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
                             scope.expandedNodesMap = newExpandedNodesMap;
                         });
 
-//                        scope.$watch('expandedNodesMap', function(newValue) {
-//
-//                        });
+                        //                        scope.$watch('expandedNodesMap', function(newValue) {
+                        //
+                        //                        });
 
                         //Rendering template for a root node
-                        treemodelCntr.template( scope, function(clone) {
-                            element.html('').append( clone );
+                        treemodelCntr.template(scope, function (clone) {
+                            element.html('').append(clone);
                         });
                         // save the transclude function from compile (which is not bound to a scope as apposed to the one from link)
                         // we can fix this to work with the link transclude function with angular 1.2.6. as for angular 1.2.0 we need
@@ -385,22 +431,22 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
                 }
             };
         }])
-        .directive("setNodeToData", ['$parse', function($parse) {
+        .directive("setNodeToData", ['$parse', function ($parse) {
             return {
                 restrict: 'A',
-                link: function($scope, $element, $attrs) {
+                link: function ($scope, $element, $attrs) {
                     $element.data('node', $scope.node);
                     $element.data('scope-id', $scope.$id);
                 }
             };
         }])
-        .directive("treeitem", function() {
+        .directive("treeitem", function () {
             return {
                 restrict: 'E',
                 require: "^treecontrol",
-                link: function( scope, element, attrs, treemodelCntr) {
+                link: function (scope, element, attrs, treemodelCntr) {
                     // Rendering template for the current node
-                    treemodelCntr.template(scope, function(clone) {
+                    treemodelCntr.template(scope, function (clone) {
                         element.html('').append(clone);
                     });
                 }
@@ -408,25 +454,25 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
         })
         .directive("treeTransclude", function () {
             return {
-                controller: ['$scope',function ($scope) {
+                controller: ['$scope', function ($scope) {
                     ensureAllDefaultOptions($scope);
                 }],
 
-                link: function(scope, element, attrs, controller) {
+                link: function (scope, element, attrs, controller) {
                     if (!scope.options.isLeaf(scope.node, scope)) {
                         angular.forEach(scope.expandedNodesMap, function (node, id) {
-                            if (scope.options.equality(node, scope.node , scope)) {
+                            if (scope.options.equality(node, scope.node, scope)) {
                                 scope.expandedNodesMap[scope.$id] = scope.node;
                                 scope.expandedNodesMap[id] = undefined;
                             }
                         });
                     }
-                    if (!scope.options.multiSelection && scope.options.equality(scope.node, scope.selectedNode , scope)) {
+                    if (!scope.options.multiSelection && scope.options.equality(scope.node, scope.selectedNode, scope)) {
                         scope.selectedNode = scope.node;
                     } else if (scope.options.multiSelection) {
                         var newSelectedNodes = [];
-                        for (var i = 0; (i < scope.selectedNodes.length); i++) {
-                            if (scope.options.equality(scope.node, scope.selectedNodes[i] , scope)) {
+                        for (var i = 0; (i < scope.selectedNodes.length) ; i++) {
+                            if (scope.options.equality(scope.node, scope.selectedNodes[i], scope)) {
                                 newSelectedNodes.push(scope.node);
                             }
                         }
@@ -437,22 +483,22 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
                     scope.transcludeScope = scope.parentScopeOfTree.$new();
                     scope.transcludeScope.node = scope.node;
                     scope.transcludeScope.$path = createPath(scope);
-                    scope.transcludeScope.$parentNode = (scope.$parent.node === scope.synteticRoot)?null:scope.$parent.node;
+                    scope.transcludeScope.$parentNode = (scope.$parent.node === scope.synteticRoot) ? null : scope.$parent.node;
                     scope.transcludeScope.$index = scope.$index;
                     scope.transcludeScope.$first = scope.$first;
                     scope.transcludeScope.$middle = scope.$middle;
                     scope.transcludeScope.$last = scope.$last;
                     scope.transcludeScope.$odd = scope.$odd;
                     scope.transcludeScope.$even = scope.$even;
-                    scope.$on('$destroy', function() {
+                    scope.$on('$destroy', function () {
                         scope.transcludeScope.$destroy();
                     });
 
-                    scope.$treeTransclude(scope.transcludeScope, function(clone) {
+                    scope.$treeTransclude(scope.transcludeScope, function (clone) {
                         element.empty();
                         element.append(clone);
                     });
                 }
             };
         });
-})( angular );
+})(angular);
