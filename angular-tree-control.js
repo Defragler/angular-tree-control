@@ -19,7 +19,6 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
             return _path;
         }
     }
- 
 
     function ensureDefault(obj, prop, value) {
         if (!obj.hasOwnProperty(prop))
@@ -52,11 +51,6 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
     function defaultEquality(a, b, $scope) {
         if (!a || !b)
             return false;
-
-        if ($scope.useHashkey) {
-            return a.id == b.id;
-        }
-
         a = shallowCopy(a);
         a[$scope.options.nodeChildren] = [];
         b = shallowCopy(b);
@@ -107,6 +101,8 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
                     return "";
             }
 
+
+
             return {
                 restrict: 'EA',
                 require: "treecontrol",
@@ -128,50 +124,12 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
                 },
                 controller: ['$scope', '$templateCache', '$interpolate', 'treeConfig', function ($scope, $templateCache, $interpolate, treeConfig) {
 
-                    $scope.defaultExpandedNodes = function (nodes, depth) {
-                        var expandedNodes = [];
-                        var nodeChildren = $scope.options.nodeChildren;
-
-                        depth = depth || 1;
-                        nodes = nodes || $scope.treeModel;
-
-                        if (nodes == null) {
-                            return expandedNodes;
-                        }
-
-                        if (!nodes.length && !defaultIsLeaf(nodes)) {
-                            nodes = nodes[nodeChildren];
-                        }
-
-                        if (depth > $scope.expandLevel || !nodes.length) {
-                            return expandedNodes;
-                        }
-
-                        depth++;
-
-                        for (var i = 0, len = nodes.length; i < len; i++) {
-                            if (!defaultIsLeaf(nodes[i])) {
-                                expandedNodes.push(nodes[i]);
-                                expandedNodes = expandedNodes.concat(
-                                    $scope.defaultExpandedNodes(nodes[i][nodeChildren], depth)
-                                );
-                            }
-                        }
-
-                        return expandedNodes;
-                    };
-
                     $scope.options = $scope.options || {};
 
                     ensureAllDefaultOptions($scope);
 
-                    if (!angular.isDefined($scope.expandLevel)) {
-                        $scope.expandLevel = 2;
-                    }
-
-                    $scope.explicitExpandedNodes = angular.isDefined($scope.expandedNodes);
                     $scope.selectedNodes = $scope.selectedNodes || [];
-                    $scope.expandedNodes = $scope.expandedNodes || $scope.defaultExpandedNodes();
+                    $scope.expandedNodes = $scope.expandedNodes || [];
                     $scope.expandedNodesMap = {};
                     for (var i = 0; i < $scope.expandedNodes.length; i++) {
                         $scope.expandedNodesMap["a" + i] = $scope.expandedNodes[i];
@@ -192,14 +150,6 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
                         }
                     }
 
-                    function isDraggable() {
-                        return !!$scope.onNodeDrag;
-                    }
-
-                    $scope.dragNode = function (node) {
-                        return $scope.onNodeDrag({ node: node });
-                    };
-
                     $scope.headClass = function (node) {
                         var liSelectionClass = classIfDefined($scope.options.injectClasses.liSelected, false);
                         var injectSelectionClass = "";
@@ -219,8 +169,6 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
                         else
                             return classIfDefined($scope.options.injectClasses.iCollapsed);
                     };
-
-                   
 
                     $scope.nodeExpanded = function () {
                         return !!$scope.expandedNodesMap[this.$id];
@@ -356,7 +304,7 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
                             'set-node-to-data>' +
                             '<i class="tree-branch-head" ng-class="iBranchClass()" ng-click="selectNodeHead(node)"></i>' +
                             '<i class="tree-leaf-head {{options.iLeafClass}}"></i>' +
-                            '<div class="tree-label {{options.labelClass}}" ng-class="[selectedClass(), unselectableClass()]" ng-click="selectNodeLabel(node)"' + (isDraggable() ? 'bf-draggable="dragNode(node)" ' : '') + 'tree-transclude></div>' +
+                            '<div class="tree-label {{options.labelClass}}" ng-class="[selectedClass(), unselectableClass()]" ng-click="selectNodeLabel(node)" tree-transclude></div>' +
                             '<treeitem ng-if="nodeExpanded()"></treeitem>' +
                             '</li>' +
                             '</ul>';
@@ -379,10 +327,6 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
                                 if (angular.equals(scope.node, newValue))
                                     return;
                                 scope.node = newValue;
-                            }
-
-                            if (!scope.explicitExpandedNodes) {
-                                scope.expandedNodes = scope.defaultExpandedNodes(scope.node);
                             }
                         });
 
