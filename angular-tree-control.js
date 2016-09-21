@@ -5,65 +5,6 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
 (function (angular) {
     'use strict';
 
-    function createPath(startScope) {
-        return function path() {
-            var _path = [];
-            var scope = startScope;
-            var prevNode;
-            while (scope && scope.node !== startScope.synteticRoot) {
-                if (prevNode !== scope.node)
-                    _path.push(scope.node);
-                prevNode = scope.node;
-                scope = scope.$parent;
-            }
-            return _path;
-        }
-    }
-
-
-    function ensureDefault(obj, prop, value) {
-        if (!obj.hasOwnProperty(prop))
-            obj[prop] = value;
-    }
-
-   
-    function shallowCopy(src, dst) {
-        if (angular.isArray(src)) {
-            dst = dst || [];
-
-            for (var i = 0; i < src.length; i++) {
-                dst[i] = src[i];
-            }
-        } else if (angular.isObject(src)) {
-            dst = dst || {};
-
-            for (var key in src) {
-                if (hasOwnProperty.call(src, key) && !(key.charAt(0) === '$' && key.charAt(1) === '$')) {
-                    dst[key] = src[key];
-                }
-            }
-        }
-
-        return dst || src;
-    }
-    function defaultEquality(a, b, $scope) {
-        if (!a || !b)
-            return false;
-
-        if ($scope.useHashkey) {
-            return a.id == b.id;
-        }
-
-        a = shallowCopy(a);
-        a[$scope.options.nodeChildren] = [];
-        b = shallowCopy(b);
-        b[$scope.options.nodeChildren] = [];
-        return angular.equals(a, b);
-    }
-
-    function defaultIsSelectable() {
-        return true;
-    }
 
     function ensureAllDefaultOptions($scope) {
         ensureDefault($scope.options, "multiSelection", false);
@@ -192,6 +133,67 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
                     function isDraggable() {
                         return !!$scope.onNodeDrag;
                     };
+
+
+                    function createPath(startScope) {
+                        return function path() {
+                            var _path = [];
+                            var scope = startScope;
+                            var prevNode;
+                            while (scope && scope.node !== startScope.synteticRoot) {
+                                if (prevNode !== scope.node)
+                                    _path.push(scope.node);
+                                prevNode = scope.node;
+                                scope = scope.$parent;
+                            }
+                            return _path;
+                        }
+                    }
+
+
+                    function ensureDefault(obj, prop, value) {
+                        if (!obj.hasOwnProperty(prop))
+                            obj[prop] = value;
+                    }
+
+
+                    function shallowCopy(src, dst) {
+                        if (angular.isArray(src)) {
+                            dst = dst || [];
+
+                            for (var i = 0; i < src.length; i++) {
+                                dst[i] = src[i];
+                            }
+                        } else if (angular.isObject(src)) {
+                            dst = dst || {};
+
+                            for (var key in src) {
+                                if (hasOwnProperty.call(src, key) && !(key.charAt(0) === '$' && key.charAt(1) === '$')) {
+                                    dst[key] = src[key];
+                                }
+                            }
+                        }
+
+                        return dst || src;
+                    }
+                    function defaultEquality(a, b, $scope) {
+                        if (!a || !b)
+                            return false;
+
+                        if ($scope.useHashkey) {
+                            return a.id == b.id;
+                        }
+
+                        a = shallowCopy(a);
+                        a[$scope.options.nodeChildren] = [];
+                        b = shallowCopy(b);
+                        b[$scope.options.nodeChildren] = [];
+                        return angular.equals(a, b);
+                    }
+
+                    function defaultIsSelectable() {
+                        return true;
+                    }
 
                     function defaultIsLeaf(node, $scope) {
                         return !node[$scope.options.nodeChildren] || node[$scope.options.nodeChildren].length === 0;
