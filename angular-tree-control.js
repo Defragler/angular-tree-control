@@ -131,6 +131,10 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
                         return !!$scope.onNodeDrag;
                     }
 
+                    $scope.dragNode = function (node) {
+                        return $scope.onNodeDrag({ node: node });
+                    };
+
                     $scope.defaultExpandedNodes = function (nodes, depth) {
                         var expandedNodes = [];
                         var nodeChildren = $scope.options.nodeChildren;
