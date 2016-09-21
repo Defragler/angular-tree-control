@@ -348,11 +348,12 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
 
                     if (!template) {
                         template =
-                            '<ul ' + classIfDefined($scope.options.injectClasses.ul, true) + '>' +
-                            '<li ng-repeat="node in node.' + $scope.options.nodeChildren + ' | filter:filterExpression:filterComparator" ng-class="headClass(node)" ' + classIfDefined($scope.options.injectClasses.li, true) + '>' +
+                            '<ul {{options.ulClass}} >' +
+                            '<li ng-repeat="node in node.{{options.nodeChildren}} | filter:filterExpression:filterComparator {{options.orderBy}}" ng-class="headClass(node)" {{options.liClass}}' +
+                            'set-node-to-data>' +
                             '<i class="tree-branch-head" ng-class="iBranchClass()" ng-click="selectNodeHead(node)"></i>' +
-                            '<i class="tree-leaf-head ' + classIfDefined($scope.options.injectClasses.iLeaf, false) + '"></i>' +
-                            '<div class="tree-label ' + classIfDefined($scope.options.injectClasses.label, false) + '" ng-class="selectedClass()" ng-click="selectNodeLabel(node)" ' + (isDraggable() ? 'bf-draggable="dragNode(node)" ' : '') + 'tree-transclude></div>' +
+                            '<i class="tree-leaf-head {{options.iLeafClass}}"></i>' +
+                            '<div class="tree-label {{options.labelClass}}" ng-class="[selectedClass(), unselectableClass()]" ng-click="selectNodeLabel(node)"' + (isDraggable() ? 'bf-draggable="dragNode(node)" ' : '') + 'tree-transclude></div>' +
                             '<treeitem ng-if="nodeExpanded()"></treeitem>' +
                             '</li>' +
                             '</ul>';
