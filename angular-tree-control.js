@@ -20,9 +20,6 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
         }
     }
 
-    function isDraggable() {
-        return !!$scope.onNodeDrag;
-    }
 
     function ensureDefault(obj, prop, value) {
         if (!obj.hasOwnProperty(prop))
@@ -160,7 +157,11 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
                             }
                             return false;
                         }
-                    }
+                    };
+
+                    function isDraggable() {
+                        return !!$scope.onNodeDrag;
+                    };
 
                     $scope.dragNode = function (node) {
                         return $scope.onNodeDrag({ node: node });
@@ -353,7 +354,9 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
                             'set-node-to-data>' +
                             '<i class="tree-branch-head" ng-class="iBranchClass()" ng-click="selectNodeHead(node)"></i>' +
                             '<i class="tree-leaf-head {{options.iLeafClass}}"></i>' +
-                            '<div class="tree-label {{options.labelClass}}" ng-class="[selectedClass(), unselectableClass()]" ng-click="selectNodeLabel(node)"' + (isDraggable() ? 'bf-draggable="dragNode(node)" ' : '') + 'tree-transclude></div>' +
+                            '<div class="tree-label {{options.labelClass}}" ng-class="[selectedClass(), unselectableClass()]" ng-click="selectNodeLabel(node)"' +
+                            (isDraggable() ? 'bf-draggable="dragNode(node)" ' : '') +
+                            'tree-transclude></div>' +
                             '<treeitem ng-if="nodeExpanded()"></treeitem>' +
                             '</li>' +
                             '</ul>';
