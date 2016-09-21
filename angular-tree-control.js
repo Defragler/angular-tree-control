@@ -48,13 +48,12 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
 
         return dst || src;
     }
-    function defaultEquality(a, b,$scope) {
+    function defaultEquality(a, b, $scope) {
         if (!a || !b)
             return false;
 
-        if (!$scope.useHashkey) {
-            if (a.id && b.id)
-                return a.id == b.id;
+        if ($scope.useHashkey) {
+            return a.id == b.id;
         }
 
         a = shallowCopy(a);
@@ -86,10 +85,6 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
         ensureDefault($scope.options, "allowDeselect", true);
         ensureDefault($scope.options, "isSelectable", defaultIsSelectable);
     }
-
-    function isDraggable() {
-        return !!$scope.onNodeDrag;
-    }
     
     angular.module( 'treeControl', [] )
         .constant('treeConfig', {
@@ -109,9 +104,7 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
                 }
                 else
                     return "";
-            }
-            
-            
+            }       
             
             return {
                 restrict: 'EA',
@@ -160,6 +153,9 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
                         }
                     }
 
+                    function isDraggable() {
+                        return !!$scope.onNodeDrag;
+                    }
 
                     $scope.dragNode = function (node) {
                         return $scope.onNodeDrag({ node: node });
