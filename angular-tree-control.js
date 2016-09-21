@@ -51,11 +51,13 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
     function defaultEquality(a, b, $scope) {
         if (!a || !b)
             return false;
-        a = shallowCopy(a);
-        a[$scope.options.nodeChildren] = [];
-        b = shallowCopy(b);
-        b[$scope.options.nodeChildren] = [];
-        return angular.equals(a, b);
+
+        if (!$scope.useHashkey) {
+            if (a.id && b.id)
+                return a.id == b.id;
+        }
+
+        return a.$$hashKey == b.$$hashKey;
     }
 
     function defaultIsSelectable() {
@@ -112,6 +114,7 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
                     selectedNode: "=?",
                     selectedNodes: "=?",
                     expandedNodes: "=?",
+                    expandedLevel: "=?",
                     onSelection: "&",
                     onNodeToggle: "&",
                     onNodeDrag: "&?",
@@ -123,6 +126,43 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
                     filterComparator: "=?"
                 },
                 controller: ['$scope', '$templateCache', '$interpolate', 'treeConfig', function ($scope, $templateCache, $interpolate, treeConfig) {
+
+                    function isDraggable() {
+                        return !!$scope.onNodeDrag;
+                    }
+
+                    $scope.defaultExpandedNodes = function (nodes, depth) {
+                        var expandedNodes = [];
+                        var nodeChildren = $scope.options.nodeChildren;
+
+                        depth = depth || 1;
+                        nodes = nodes || $scope.treeModel;
+
+                        if (nodes == null) {
+                            return expandedNodes;
+                        }
+
+                        if (!nodes.length && !defaultIsLeaf(nodes)) {
+                            nodes = nodes[nodeChildren];
+                        }
+
+                        if (depth > $scope.expandLevel || !nodes.length) {
+                            return expandedNodes;
+                        }
+
+                        depth++;
+
+                        for (var i = 0, len = nodes.length; i < len; i++) {
+                            if (!defaultIsLeaf(nodes[i])) {
+                                expandedNodes.push(nodes[i]);
+                                expandedNodes = expandedNodes.concat(
+                                    $scope.defaultExpandedNodes(nodes[i][nodeChildren], depth)
+                                );
+                            }
+                        }
+
+                        return expandedNodes;
+                    }
 
                     $scope.options = $scope.options || {};
 
