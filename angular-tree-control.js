@@ -128,6 +128,39 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
                 },
                 controller: ['$scope', '$templateCache', '$interpolate', 'treeConfig', function ($scope, $templateCache, $interpolate, treeConfig) {
 
+                    $scope.defaultExpandedNodes = function (nodes, depth) {
+                        var expandedNodes = [];
+                        var nodeChildren = $scope.options.nodeChildren;
+
+                        depth = depth || 1;
+                        nodes = nodes || $scope.treeModel;
+
+                        if (nodes == null) {
+                            return expandedNodes;
+                        }
+
+                        if (!nodes.length && !defaultIsLeaf(nodes)) {
+                            nodes = nodes[nodeChildren];
+                        }
+
+                        if (depth > $scope.expandLevel || !nodes.length) {
+                            return expandedNodes;
+                        }
+
+                        depth++;
+
+                        for (var i = 0, len = nodes.length; i < len; i++) {
+                            if (!defaultIsLeaf(nodes[i])) {
+                                expandedNodes.push(nodes[i]);
+                                expandedNodes = expandedNodes.concat(
+                                    $scope.defaultExpandedNodes(nodes[i][nodeChildren], depth)
+                                );
+                            }
+                        }
+
+                        return expandedNodes;
+                    };
+
                     $scope.options = $scope.options || {};
 
                     ensureAllDefaultOptions($scope);
@@ -138,7 +171,7 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
 
                     $scope.explicitExpandedNodes = angular.isDefined($scope.expandedNodes);
                     $scope.selectedNodes = $scope.selectedNodes || [];
-                    $scope.expandedNodes = $scope.expandedNodes || $scope.defaultExpandedNodes();;
+                    $scope.expandedNodes = $scope.expandedNodes || $scope.defaultExpandedNodes();
                     $scope.expandedNodesMap = {};
                     for (var i = 0; i < $scope.expandedNodes.length; i++) {
                         $scope.expandedNodesMap["a" + i] = $scope.expandedNodes[i];
@@ -187,38 +220,7 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
                             return classIfDefined($scope.options.injectClasses.iCollapsed);
                     };
 
-                    $scope.defaultExpandedNodes = function (nodes, depth) {
-                        var expandedNodes = [];
-                        var nodeChildren = $scope.options.nodeChildren;
-
-                        depth = depth || 1;
-                        nodes = nodes || $scope.treeModel;
-
-                        if (nodes == null) {
-                            return expandedNodes;
-                        }
-
-                        if (!nodes.length && !defaultIsLeaf(nodes)) {
-                            nodes = nodes[nodeChildren];
-                        }
-
-                        if (depth > $scope.expandLevel || !nodes.length) {
-                            return expandedNodes;
-                        }
-
-                        depth++;
-
-                        for (var i = 0, len = nodes.length; i < len; i++) {
-                            if (!defaultIsLeaf(nodes[i])) {
-                                expandedNodes.push(nodes[i]);
-                                expandedNodes = expandedNodes.concat(
-                                    $scope.defaultExpandedNodes(nodes[i][nodeChildren], depth)
-                                );
-                            }
-                        }
-
-                        return expandedNodes;
-                    };
+                   
 
                     $scope.nodeExpanded = function () {
                         return !!$scope.expandedNodesMap[this.$id];
