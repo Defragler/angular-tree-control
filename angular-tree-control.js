@@ -51,6 +51,12 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
     function defaultEquality(a, b,$scope) {
         if (!a || !b)
             return false;
+
+        if (!$scope.useHashkey) {
+            if (a.id && b.id)
+                return a.id == b.id;
+        }
+
         a = shallowCopy(a);
         a[$scope.options.nodeChildren] = [];
         b = shallowCopy(b);
@@ -79,6 +85,10 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
         ensureDefault($scope.options, "isLeaf", defaultIsLeaf);
         ensureDefault($scope.options, "allowDeselect", true);
         ensureDefault($scope.options, "isSelectable", defaultIsSelectable);
+    }
+
+    function isDraggable() {
+        return !!$scope.onNodeDrag;
     }
     
     angular.module( 'treeControl', [] )
@@ -114,6 +124,8 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
                     expandedNodes: "=?",
                     onSelection: "&",
                     onNodeToggle: "&",
+                    onNodeDrag: "&?",
+                    useHashkey: "=?",
                     options: "=?",
                     orderBy: "=?",
                     reverseOrder: "@",
@@ -147,6 +159,11 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
                             return false;
                         }
                     }
+
+
+                    $scope.dragNode = function (node) {
+                        return $scope.onNodeDrag({ node: node });
+                    };
 
                     $scope.headClass = function(node) {
                         var liSelectionClass = classIfDefined($scope.options.injectClasses.liSelected, false);
