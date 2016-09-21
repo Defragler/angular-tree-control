@@ -19,10 +19,7 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
             return _path;
         }
     }
-
-    function isDraggable() {
-        return !!$scope.onNodeDrag;
-    }
+ 
 
     function ensureDefault(obj, prop, value) {
         if (!obj.hasOwnProperty(prop))
@@ -160,6 +157,10 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
                             }
                             return false;
                         }
+                    }
+
+                    function isDraggable() {
+                        return !!$scope.onNodeDrag;
                     }
 
                     $scope.dragNode = function (node) {
