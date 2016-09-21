@@ -12,20 +12,7 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
             templateUrl: null
         })
         .directive('treecontrol', ['$compile', function ($compile) {
-            /**
-             * @param cssClass - the css class
-             * @param addClassProperty - should we wrap the class name with class=""
-             */
-            $scope.classIfDefined = (cssClass, addClassProperty) => {
-                if (cssClass) {
-                    if (addClassProperty)
-                        return 'class="' + cssClass + '"';
-                    else
-                        return cssClass;
-                }
-                else
-                    return "";
-            }
+
 
             return {
                 restrict: 'EA',
@@ -54,6 +41,21 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
 
                     if (!angular.isDefined($scope.expandLevel)) {
                         $scope.expandLevel = 2;
+                    }
+
+                    /**
+                    * @param cssClass - the css class
+                    * @param addClassProperty - should we wrap the class name with class=""
+                    */
+                    $scope.classIfDefined = (cssClass, addClassProperty) => {
+                        if (cssClass) {
+                            if (addClassProperty)
+                                return 'class="' + cssClass + '"';
+                            else
+                                return cssClass;
+                        }
+                        else
+                            return "";
                     }
 
                     $scope.defaultExpandedNodes = function (nodes, depth) {
@@ -464,7 +466,7 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
         .directive("treeTransclude", function () {
             return {
                 controller: ['$scope', function ($scope) {
-                    $scope.ensureAllDefaultOptions($scope);
+                    scope.ensureAllDefaultOptions($scope);
                 }],
 
                 link: function (scope, element, attrs, controller) {
