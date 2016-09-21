@@ -177,6 +177,7 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
                     if (!angular.isDefined($scope.expandLevel)) {
                         $scope.expandLevel = 2;
                     }
+
                     $scope.explicitExpandedNodes = angular.isDefined($scope.expandedNodes);
                     $scope.expandedNodes = $scope.expandedNodes || $scope.defaultExpandedNodes();
                     $scope.expandedNodesMap = {};
@@ -378,6 +379,10 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
                                 if (angular.equals(scope.node, newValue))
                                     return;
                                 scope.node = newValue;
+                            }
+
+                            if (!scope.explicitExpandedNodes) {
+                                scope.expandedNodes = scope.defaultExpandedNodes(scope.node);
                             }
                         });
 
