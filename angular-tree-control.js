@@ -26,10 +26,7 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
             obj[prop] = value;
     }
 
-    function defaultIsLeaf(node, $scope) {
-        return !node[$scope.options.nodeChildren] || node[$scope.options.nodeChildren].length === 0;
-    }
-
+   
     function shallowCopy(src, dst) {
         if (angular.isArray(src)) {
             dst = dst || [];
@@ -195,6 +192,10 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
                     function isDraggable() {
                         return !!$scope.onNodeDrag;
                     };
+
+                    function defaultIsLeaf(node, $scope) {
+                        return !node[$scope.options.nodeChildren] || node[$scope.options.nodeChildren].length === 0;
+                    }
 
                     $scope.dragNode = function (node) {
                         return $scope.onNodeDrag({ node: node });
