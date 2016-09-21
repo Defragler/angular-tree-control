@@ -5,14 +5,110 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
 (function (angular) {
     'use strict';
 
+    function createPath(startScope) {
+        return function path() {
+            var _path = [];
+            var scope = startScope;
+            var prevNode;
+            while (scope && scope.node !== startScope.synteticRoot) {
+                if (prevNode !== scope.node)
+                    _path.push(scope.node);
+                prevNode = scope.node;
+                scope = scope.$parent;
+            }
+            return _path;
+        }
+    }
 
+    function isDraggable() {
+        return !!$scope.onNodeDrag;
+    }
+
+    function ensureDefault(obj, prop, value) {
+        if (!obj.hasOwnProperty(prop))
+            obj[prop] = value;
+    }
+
+    function defaultIsLeaf(node, $scope) {
+        return !node[$scope.options.nodeChildren] || node[$scope.options.nodeChildren].length === 0;
+    }
+
+    function shallowCopy(src, dst) {
+        if (angular.isArray(src)) {
+            dst = dst || [];
+
+            for (var i = 0; i < src.length; i++) {
+                dst[i] = src[i];
+            }
+        } else if (angular.isObject(src)) {
+            dst = dst || {};
+
+            for (var key in src) {
+                if (hasOwnProperty.call(src, key) && !(key.charAt(0) === '$' && key.charAt(1) === '$')) {
+                    dst[key] = src[key];
+                }
+            }
+        }
+
+        return dst || src;
+    }
+    function defaultEquality(a, b, $scope) {
+        if (!a || !b)
+            return false;
+
+        if ($scope.useHashkey) {
+            return a.id == b.id;
+        }
+
+        a = shallowCopy(a);
+        a[$scope.options.nodeChildren] = [];
+        b = shallowCopy(b);
+        b[$scope.options.nodeChildren] = [];
+        return angular.equals(a, b);
+    }
+
+    function defaultIsSelectable() {
+        return true;
+    }
+
+    function ensureAllDefaultOptions($scope) {
+        ensureDefault($scope.options, "multiSelection", false);
+        ensureDefault($scope.options, "nodeChildren", "children");
+        ensureDefault($scope.options, "dirSelectable", "true");
+        ensureDefault($scope.options, "injectClasses", {});
+        ensureDefault($scope.options.injectClasses, "ul", "");
+        ensureDefault($scope.options.injectClasses, "li", "");
+        ensureDefault($scope.options.injectClasses, "liSelected", "tree-selected");
+        ensureDefault($scope.options.injectClasses, "iExpanded", "");
+        ensureDefault($scope.options.injectClasses, "iCollapsed", "");
+        ensureDefault($scope.options.injectClasses, "iLeaf", "");
+        ensureDefault($scope.options.injectClasses, "label", "");
+        ensureDefault($scope.options.injectClasses, "labelSelected", "");
+        ensureDefault($scope.options, "equality", defaultEquality);
+        ensureDefault($scope.options, "isLeaf", defaultIsLeaf);
+        ensureDefault($scope.options, "allowDeselect", true);
+        ensureDefault($scope.options, "isSelectable", defaultIsSelectable);
+    }
 
     angular.module('treeControl', [])
         .constant('treeConfig', {
             templateUrl: null
         })
         .directive('treecontrol', ['$compile', function ($compile) {
-
+            /**
+             * @param cssClass - the css class
+             * @param addClassProperty - should we wrap the class name with class=""
+             */
+            function classIfDefined(cssClass, addClassProperty) {
+                if (cssClass) {
+                    if (addClassProperty)
+                        return 'class="' + cssClass + '"';
+                    else
+                        return cssClass;
+                }
+                else
+                    return "";
+            }
 
             return {
                 restrict: 'EA',
@@ -43,20 +139,52 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
                         $scope.expandLevel = 2;
                     }
 
-                    /**
-                    * @param cssClass - the css class
-                    * @param addClassProperty - should we wrap the class name with class=""
-                    */
-                    $scope.classIfDefined = (cssClass, addClassProperty) => {
-                        if (cssClass) {
-                            if (addClassProperty)
-                                return 'class="' + cssClass + '"';
-                            else
-                                return cssClass;
-                        }
-                        else
-                            return "";
+                    $scope.explicitExpandedNodes = angular.isDefined($scope.expandedNodes);
+                    $scope.selectedNodes = $scope.selectedNodes || [];
+                    $scope.expandedNodes = $scope.expandedNodes || $scope.defaultExpandedNodes();;
+                    $scope.expandedNodesMap = {};
+                    for (var i = 0; i < $scope.expandedNodes.length; i++) {
+                        $scope.expandedNodesMap["a" + i] = $scope.expandedNodes[i];
                     }
+                    $scope.parentScopeOfTree = $scope.$parent;
+
+
+                    function isSelectedNode(node) {
+                        if (!$scope.options.multiSelection && ($scope.options.equality(node, $scope.selectedNode, $scope)))
+                            return true;
+                        else if ($scope.options.multiSelection && $scope.selectedNodes) {
+                            for (var i = 0; (i < $scope.selectedNodes.length) ; i++) {
+                                if ($scope.options.equality(node, $scope.selectedNodes[i], $scope)) {
+                                    return true;
+                                }
+                            }
+                            return false;
+                        }
+                    }
+
+                    $scope.dragNode = function (node) {
+                        return $scope.onNodeDrag({ node: node });
+                    };
+
+                    $scope.headClass = function (node) {
+                        var liSelectionClass = classIfDefined($scope.options.injectClasses.liSelected, false);
+                        var injectSelectionClass = "";
+                        if (liSelectionClass && isSelectedNode(node))
+                            injectSelectionClass = " " + liSelectionClass;
+                        if ($scope.options.isLeaf(node, $scope))
+                            return "tree-leaf" + injectSelectionClass;
+                        if ($scope.expandedNodesMap[this.$id])
+                            return "tree-expanded" + injectSelectionClass;
+                        else
+                            return "tree-collapsed" + injectSelectionClass;
+                    };
+
+                    $scope.iBranchClass = function () {
+                        if ($scope.expandedNodesMap[this.$id])
+                            return classIfDefined($scope.options.injectClasses.iExpanded);
+                        else
+                            return classIfDefined($scope.options.injectClasses.iCollapsed);
+                    };
 
                     $scope.defaultExpandedNodes = function (nodes, depth) {
                         var expandedNodes = [];
@@ -89,143 +217,6 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
                         }
 
                         return expandedNodes;
-                    };
-
-                    $scope.explicitExpandedNodes = angular.isDefined($scope.expandedNodes);
-                    $scope.selectedNodes = $scope.selectedNodes || [];
-                    $scope.expandedNodes = $scope.expandedNodes || $scope.defaultExpandedNodes();;
-                    $scope.expandedNodesMap = {};
-                    for (var i = 0; i < $scope.expandedNodes.length; i++) {
-                        $scope.expandedNodesMap["a" + i] = $scope.expandedNodes[i];
-                    }
-                    $scope.parentScopeOfTree = $scope.$parent;
-
-
-                    $scope.isSelectedNode = (node) => {
-                        if (!$scope.options.multiSelection && ($scope.options.equality(node, $scope.selectedNode, $scope)))
-                            return true;
-                        else if ($scope.options.multiSelection && $scope.selectedNodes) {
-                            for (var i = 0; (i < $scope.selectedNodes.length) ; i++) {
-                                if ($scope.options.equality(node, $scope.selectedNodes[i], $scope)) {
-                                    return true;
-                                }
-                            }
-                            return false;
-                        }
-                    };
-
-                    $scope.isDraggable = () => {
-                        return !!$scope.onNodeDrag;
-                    };
-
-
-                    $scope.createPath = (startScope) => {
-                        return function path() {
-                            var _path = [];
-                            var scope = startScope;
-                            var prevNode;
-                            while (scope && scope.node !== startScope.synteticRoot) {
-                                if (prevNode !== scope.node)
-                                    _path.push(scope.node);
-                                prevNode = scope.node;
-                                scope = scope.$parent;
-                            }
-                            return _path;
-                        }
-                    }
-
-
-                    $scope.ensureDefault = (obj, prop, value) => {
-                        if (!obj.hasOwnProperty(prop))
-                            obj[prop] = value;
-                    }
-
-
-
-                    $scope.ensureAllDefaultOptions = ($scope) => {
-                        ensureDefault($scope.options, "multiSelection", false);
-                        ensureDefault($scope.options, "nodeChildren", "children");
-                        ensureDefault($scope.options, "dirSelectable", "true");
-                        ensureDefault($scope.options, "injectClasses", {});
-                        ensureDefault($scope.options.injectClasses, "ul", "");
-                        ensureDefault($scope.options.injectClasses, "li", "");
-                        ensureDefault($scope.options.injectClasses, "liSelected", "tree-selected");
-                        ensureDefault($scope.options.injectClasses, "iExpanded", "");
-                        ensureDefault($scope.options.injectClasses, "iCollapsed", "");
-                        ensureDefault($scope.options.injectClasses, "iLeaf", "");
-                        ensureDefault($scope.options.injectClasses, "label", "");
-                        ensureDefault($scope.options.injectClasses, "labelSelected", "");
-                        ensureDefault($scope.options, "equality", defaultEquality);
-                        ensureDefault($scope.options, "isLeaf", defaultIsLeaf);
-                        ensureDefault($scope.options, "allowDeselect", true);
-                        ensureDefault($scope.options, "isSelectable", defaultIsSelectable);
-                    }
-
-                    $scope.shallowCopy = (src, dst) => {
-                        if (angular.isArray(src)) {
-                            dst = dst || [];
-
-                            for (var i = 0; i < src.length; i++) {
-                                dst[i] = src[i];
-                            }
-                        } else if (angular.isObject(src)) {
-                            dst = dst || {};
-
-                            for (var key in src) {
-                                if (hasOwnProperty.call(src, key) && !(key.charAt(0) === '$' && key.charAt(1) === '$')) {
-                                    dst[key] = src[key];
-                                }
-                            }
-                        }
-
-                        return dst || src;
-                    }
-
-                    $scope.defaultEquality = (a, b, $scope) => {
-                        if (!a || !b)
-                            return false;
-
-                        if ($scope.useHashkey) {
-                            return a.id == b.id;
-                        }
-
-                        a = shallowCopy(a);
-                        a[$scope.options.nodeChildren] = [];
-                        b = shallowCopy(b);
-                        b[$scope.options.nodeChildren] = [];
-                        return angular.equals(a, b);
-                    }
-
-                    $scope.defaultIsSelectable = () => {
-                        return true;
-                    }
-
-                    $scope.defaultIsLeaf = (node, $scope) => {
-                        return !node[$scope.options.nodeChildren] || node[$scope.options.nodeChildren].length === 0;
-                    }
-
-                    $scope.dragNode = function (node) {
-                        return $scope.onNodeDrag({ node: node });
-                    };
-
-                    $scope.headClass = function (node) {
-                        var liSelectionClass = classIfDefined($scope.options.injectClasses.liSelected, false);
-                        var injectSelectionClass = "";
-                        if (liSelectionClass && isSelectedNode(node))
-                            injectSelectionClass = " " + liSelectionClass;
-                        if ($scope.options.isLeaf(node, $scope))
-                            return "tree-leaf" + injectSelectionClass;
-                        if ($scope.expandedNodesMap[this.$id])
-                            return "tree-expanded" + injectSelectionClass;
-                        else
-                            return "tree-collapsed" + injectSelectionClass;
-                    };
-
-                    $scope.iBranchClass = function () {
-                        if ($scope.expandedNodesMap[this.$id])
-                            return classIfDefined($scope.options.injectClasses.iExpanded);
-                        else
-                            return classIfDefined($scope.options.injectClasses.iCollapsed);
                     };
 
                     $scope.nodeExpanded = function () {
@@ -362,9 +353,7 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
                             'set-node-to-data>' +
                             '<i class="tree-branch-head" ng-class="iBranchClass()" ng-click="selectNodeHead(node)"></i>' +
                             '<i class="tree-leaf-head {{options.iLeafClass}}"></i>' +
-                            '<div class="tree-label {{options.labelClass}}" ng-class="[selectedClass(), unselectableClass()]" ng-click="selectNodeLabel(node)"' +
-                            (isDraggable() ? 'bf-draggable="dragNode(node)" ' : '') +
-                            'tree-transclude></div>' +
+                            '<div class="tree-label {{options.labelClass}}" ng-class="[selectedClass(), unselectableClass()]" ng-click="selectNodeLabel(node)"' + (isDraggable() ? 'bf-draggable="dragNode(node)" ' : '') + 'tree-transclude></div>' +
                             '<treeitem ng-if="nodeExpanded()"></treeitem>' +
                             '</li>' +
                             '</ul>';
@@ -466,7 +455,7 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
         .directive("treeTransclude", function () {
             return {
                 controller: ['$scope', function ($scope) {
-                    scope.ensureAllDefaultOptions($scope);
+                    ensureAllDefaultOptions($scope);
                 }],
 
                 link: function (scope, element, attrs, controller) {
