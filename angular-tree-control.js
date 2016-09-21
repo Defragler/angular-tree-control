@@ -16,7 +16,7 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
              * @param cssClass - the css class
              * @param addClassProperty - should we wrap the class name with class=""
              */
-            function classIfDefined(cssClass, addClassProperty) {
+            $scope.classIfDefined = (cssClass, addClassProperty) => {
                 if (cssClass) {
                     if (addClassProperty)
                         return 'class="' + cssClass + '"';
@@ -99,7 +99,7 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
                     $scope.parentScopeOfTree = $scope.$parent;
 
 
-                    function isSelectedNode(node) {
+                    $scope.isSelectedNode = (node) => {
                         if (!$scope.options.multiSelection && ($scope.options.equality(node, $scope.selectedNode, $scope)))
                             return true;
                         else if ($scope.options.multiSelection && $scope.selectedNodes) {
@@ -112,12 +112,12 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
                         }
                     };
 
-                    function isDraggable() {
+                    $scope.isDraggable = () => {
                         return !!$scope.onNodeDrag;
                     };
 
 
-                    function createPath(startScope) {
+                    $scope.createPath = (startScope) => {
                         return function path() {
                             var _path = [];
                             var scope = startScope;
@@ -133,14 +133,14 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
                     }
 
 
-                    function ensureDefault(obj, prop, value) {
+                    $scope.ensureDefault = (obj, prop, value) => {
                         if (!obj.hasOwnProperty(prop))
                             obj[prop] = value;
                     }
 
 
 
-                    function ensureAllDefaultOptions($scope) {
+                    $scope.ensureAllDefaultOptions = ($scope) => {
                         ensureDefault($scope.options, "multiSelection", false);
                         ensureDefault($scope.options, "nodeChildren", "children");
                         ensureDefault($scope.options, "dirSelectable", "true");
@@ -159,7 +159,7 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
                         ensureDefault($scope.options, "isSelectable", defaultIsSelectable);
                     }
 
-                    function shallowCopy(src, dst) {
+                    $scope.shallowCopy = (src, dst) => {
                         if (angular.isArray(src)) {
                             dst = dst || [];
 
@@ -178,7 +178,8 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
 
                         return dst || src;
                     }
-                    function defaultEquality(a, b, $scope) {
+
+                    $scope.defaultEquality = (a, b, $scope) => {
                         if (!a || !b)
                             return false;
 
@@ -193,11 +194,11 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
                         return angular.equals(a, b);
                     }
 
-                    function defaultIsSelectable() {
+                    $scope.defaultIsSelectable = () => {
                         return true;
                     }
 
-                    function defaultIsLeaf(node, $scope) {
+                    $scope.defaultIsLeaf = (node, $scope) => {
                         return !node[$scope.options.nodeChildren] || node[$scope.options.nodeChildren].length === 0;
                     }
 
@@ -223,7 +224,7 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
                             return classIfDefined($scope.options.injectClasses.iExpanded);
                         else
                             return classIfDefined($scope.options.injectClasses.iCollapsed);
-                    };                   
+                    };
 
                     $scope.nodeExpanded = function () {
                         return !!$scope.expandedNodesMap[this.$id];
@@ -463,7 +464,7 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
         .directive("treeTransclude", function () {
             return {
                 controller: ['$scope', function ($scope) {
-                    ensureAllDefaultOptions($scope);
+                    $scope.ensureAllDefaultOptions($scope);
                 }],
 
                 link: function (scope, element, attrs, controller) {
