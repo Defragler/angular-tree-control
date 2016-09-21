@@ -142,7 +142,7 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
                             return expandedNodes;
                         }
 
-                        if (!nodes.length && !defaultIsLeaf(nodes)) {
+                        if (!nodes.length && !defaultIsLeaf(nodes, $scope)) {
                             nodes = nodes[nodeChildren];
                         }
 
@@ -153,7 +153,7 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
                         depth++;
 
                         for (var i = 0, len = nodes.length; i < len; i++) {
-                            if (!defaultIsLeaf(nodes[i])) {
+                            if (!defaultIsLeaf(nodes[i], $scope)) {
                                 expandedNodes.push(nodes[i]);
                                 expandedNodes = expandedNodes.concat(
                                     $scope.defaultExpandedNodes(nodes[i][nodeChildren], depth)
