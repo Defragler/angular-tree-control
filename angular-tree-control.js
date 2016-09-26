@@ -103,8 +103,6 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
                     return "";
             }
 
-
-
             return {
                 restrict: 'EA',
                 require: "treecontrol",
