@@ -112,7 +112,7 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
                     selectedNode: "=?",
                     selectedNodes: "=?",
                     expandedNodes: "=?",
-                    expandedLevel: "=?",
+                    expandLevel: "=?",
                     onSelection: "&",
                     onNodeToggle: "&",
                     onNodeDrag: "&?",
@@ -149,7 +149,7 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
                             nodes = nodes[nodeChildren];
                         }
 
-                        if (depth > $scope.expandedLevel || !nodes.length) {
+                        if (depth > $scope.expandLevel || !nodes.length) {
                             return expandedNodes;
                         }
 
@@ -173,8 +173,8 @@ if (typeof module !== "undefined" && typeof exports !== "undefined" && module.ex
 
                     $scope.selectedNodes = $scope.selectedNodes || [];
 
-                    if (!angular.isDefined($scope.expandedLevel)) {
-                        $scope.expandedLevel = 2;
+                    if (!angular.isDefined($scope.expandLevel)) {
+                        $scope.expandLevel = 2;
                     }
 
                     $scope.explicitExpandedNodes = angular.isDefined($scope.expandedNodes);
